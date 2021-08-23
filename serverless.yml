@@ -66,6 +66,7 @@ resources:
           - DomainName:
               Fn::GetAtt:
               - StaticSite
+              - DomainName
             # It isn't necessary to sue this value; but we need the same
             # value for DefaultCacheBehavior.TargetOriginId
             Id:

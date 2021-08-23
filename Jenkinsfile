@@ -22,7 +22,7 @@ pipeline {
             // sh 'yarn install'
              sh 'npm install'
             // set the version number equal to the build number so that everything lines up nicely
-            sh 'npm version "6.9.0.${BUILD_ID}" --force'
+           sh 'npm version "1.0.${BUILD_ID}" --force'
         }
     }
 

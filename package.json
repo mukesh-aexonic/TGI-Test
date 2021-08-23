@@ -14,7 +14,10 @@
     "react-dom": "^17.0.2",
     "react-scripts": "4.0.3",
     "typescript": "^4.3.5",
-    "web-vitals": "^1.1.2"
+    "web-vitals": "^1.1.2",
+    "serverless": "^1.78.1",
+    "serverless-plugin-scripts": "^1.0.2",
+    "serverless-s3-sync": "^1.14.4"
   },
   "scripts": {
     "start": "react-scripts start",

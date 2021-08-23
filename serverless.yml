@@ -1,0 +1,98 @@
+service: my-tgi
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  memorySize: 128
+  timeout: 10
+  stage: ${opt:stage, 'dev'}
+
+plugins:
+  - serverless-s3-sync
+  - serverless-plugin-scripts
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  bucketName: tgiconnect-my-tgi-test
+
+  s3Sync:
+    - bucketName: ${self:custom.bucketName}
+      localDir: build
+
+  scripts:
+    hooks:
+      'deploy:createDeploymentArtifacts': yarn build
+
+resources:
+  Resources:
+    ## Specifying the S3 Bucket
+    StaticSite:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: PublicRead
+        BucketName: ${self:custom.bucketName}
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+
+    StaticSiteS3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: StaticSite
+        PolicyDocument:
+          Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action:
+            - s3:GetObject
+            Resource:
+              Fn::Join: [
+                "", [
+                  "arn:aws:s3:::",
+                  {
+                    "Ref": "StaticSite"
+                  },
+                  "/*"
+                ]
+              ]
+
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Origins:
+          - DomainName:
+              Fn::GetAtt:
+              - StaticSite
+            # It isn't necessary to sue this value; but we need the same
+            # value for DefaultCacheBehavior.TargetOriginId
+            Id:
+              Ref: StaticSite
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+          Enabled: 'true'
+          DefaultRootObject: index.html
+          PriceClass: PriceClass_100
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - GET
+              - HEAD
+            DefaultTTL: 30
+            TargetOriginId:
+              Ref: StaticSite
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+
+      DependsOn:
+        - StaticSiteS3BucketPolicy
+
